@@ -2095,16 +2095,20 @@ int pp_std(ezpp_t ez) {
 
   /* ar bonus -------------------------------------------------------- */
   ar_bonus = 0.0f;
-
-  /* high ar bonus */
-  if (ez->ar > 10.33f) {
-    ar_bonus += 0.4f * (ez->ar - 10.33f);
+  if (ez->mods & MODS_RX) {
+    if (ez->ar > 10.67f) {
+      ar_bonus += pow(ez->ar - 10.67f, 1.75f);
+    } else if (ez->ar < 9.5f) {
+      ar_bonus += 0.05f * (9.5f - ez->ar);
+    }
+  } else {
+    if (ez->ar > 10.33f) {
+      ar_bonus += 0.3f * (ez->ar - 10.33f);
+    } else if (ez->ar < 8.0f) {
+      ar_bonus += 0.01f * (8.0f - ez->ar);
+    }
   }
 
-  /* low ar bonus */
-  else if (ez->ar < 8.0f) {
-    ar_bonus += 0.01f * (8.0f - ez->ar);
-  }
 
   /* aim pp ---------------------------------------------------------- */
   ez->aim_pp = base_pp(ez->aim_stars);
@@ -2118,7 +2122,9 @@ int pp_std(ezpp_t ez) {
   /* hidden */
   hd_bonus = 1.0f;
   if (ez->mods & MODS_HD) {
-    hd_bonus += 0.04f * (12.0f - ez->ar);
+    hd_bonus += ez->mods & MODS_RX
+      ? 0.05f * (11.0f - ez->ar)
+      : 0.04f * (12.0f - ez->ar);
   }
 
   ez->aim_pp *= hd_bonus;
@@ -2179,15 +2185,31 @@ int pp_std(ezpp_t ez) {
   if (ez->mods & MODS_NF) final_multiplier *= (float) al_max(0.9f, 1.0f - 0.2f * ez->nmiss);
   if (ez->mods & MODS_SO) final_multiplier *= 1.0 - pow((double)ez->nspinners / ez->nobjects, 0.85);
 
-  ez->pp = (float)(
-    pow(
+  if (ez->mods & MODS_RX) {
+    /* aim & acc */
+    ez->pp = (float)pow(
+      pow(ez->aim_pp, 1.1f) +
+      pow(ez->acc_pp, 1.1f),
+      1.0f / 1.1f
+    );
+  } else if (ez->mods & MODS_AP) {
+    /* speed & acc */
+    ez->pp = (float)pow(
+      pow(ez->speed_pp, 1.1f) +
+      pow(ez->acc_pp, 1.1f),
+      1.0f / 1.1f
+    );
+  } else {
+    ez->pp = (float)pow(
+    /* aim, speed & acc */
       pow(ez->aim_pp, 1.1f) +
       pow(ez->speed_pp, 1.1f) +
       pow(ez->acc_pp, 1.1f),
       1.0f / 1.1f
-    ) * final_multiplier
-  );
+    );
+  }
 
+  ez->pp *= final_multiplier;
   ez->accuracy_percent = accuracy * 100.0f;
 
   return 0;
