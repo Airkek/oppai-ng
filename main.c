@@ -565,10 +565,12 @@ output_sig(output_binary) {
   int major, minor, patch;
   (void)mods_str;
 
+  /* breaks subprocess pipe? 
   if (!freopen(0, "wb", stdout)) {
     perror("freopen");
     exit(1);
   }
+  */
 
   printf("binoppai");
   oppai_version(&major, &minor, &patch);
